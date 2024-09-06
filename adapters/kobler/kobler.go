@@ -32,7 +32,7 @@ func Builder(bidderName openrtb_ext.BidderName, config config.Adapter, server co
 	return bidder, nil
 }
 
-func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) (requestData []*adapters.RequestData, errors []error) {
+func (a adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.ExtraRequestInfo) (requestData []*adapters.RequestData, errors []error) {
 	if !contains(request.Cur, SUPPORTED_CURRENCY) {
 		request.Cur = append(request.Cur, SUPPORTED_CURRENCY)
 	}
@@ -60,7 +60,7 @@ func (a *adapter) MakeRequests(request *openrtb2.BidRequest, reqInfo *adapters.E
 	return
 }
 
-func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
+func (a adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.RequestData, responseData *adapters.ResponseData) (*adapters.BidderResponse, []error) {
 	if responseData.StatusCode == http.StatusNoContent || responseData.Body == nil {
 		return nil, nil
 	}
@@ -79,24 +79,13 @@ func (a *adapter) MakeBids(request *openrtb2.BidRequest, requestData *adapters.R
 	bidResponse := adapters.NewBidderResponseWithBidsCapacity(len(request.Imp))
 	bidResponse.Currency = response.Cur
 
-	var errors []error
 	for _, seatBid := range response.SeatBid {
 		for i, bid := range seatBid.Bid {
-			bidType, err := getMediaTypeForBid(bid)
-			if err != nil {
-				errors = append(errors, err)
-				continue
-			}
-
 			bidResponse.Bids = append(bidResponse.Bids, &adapters.TypedBid{
 				Bid:     &seatBid.Bid[i],
-				BidType: bidType,
+				BidType: getMediaTypeForBid(bid),
 			})
 		}
-	}
-
-	if len(errors) > 0 {
-		return nil, errors
 	}
 
 	return bidResponse, nil
@@ -110,18 +99,19 @@ func (a adapter) getEndpoint(request *openrtb2.BidRequest) string {
 	return a.endpoint
 }
 
-func getMediaTypeForBid(bid openrtb2.Bid) (openrtb_ext.BidType, error) {
+func getMediaTypeForBid(bid openrtb2.Bid) openrtb_ext.BidType {
 	if bid.Ext != nil {
 		var bidExt openrtb_ext.ExtBid
 		err := json.Unmarshal(bid.Ext, &bidExt)
 		if err == nil && bidExt.Prebid != nil {
-			return openrtb_ext.ParseBidType(string(bidExt.Prebid.Type))
+			mediaType, err := openrtb_ext.ParseBidType(string(bidExt.Prebid.Type))
+			if err == nil {
+				return mediaType
+			}
 		}
 	}
 
-	return "", &errortypes.BadServerResponse{
-		Message: fmt.Sprintf("Failed to parse impression \"%s\" mediatype", bid.ImpID),
-	}
+	return openrtb_ext.BidTypeBanner
 }
 
 func convertImpCurrency(imp *openrtb2.Imp, reqInfo *adapters.ExtraRequestInfo) error {
