@@ -1,0 +1,13 @@
+# endpoint: "https://bid.essrtb.com/bid/prebid_rtb_call"
+endpoint: "https://bid-service.dev.essrtb.com/bid/prebid_rtb_call"
+endpointCompression: gzip
+maintainer:
+  email: bidding-support@kobler.no
+geoscope:
+  - NOR
+  - SWE
+  - DNK
+capabilities:
+  site:
+    mediaTypes:
+      - banner
