@@ -19,7 +19,7 @@ type adapter struct {
 }
 
 const (
-	DEV_BIDDER_ENDPOINT = "https://bid-service.dev.essrtb.com/bid/prebid_rtb_call"
+	DEV_BIDDER_ENDPOINT = "https://bid-service.dev.essrtb.com/bid/prebid_server_rtb_call"
 	SUPPORTED_CURRENCY  = "USD"
 )
 
